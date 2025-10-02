@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Setup - Receipt Processing App{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <h2>Configure Google Sheets</h2>
+
+    <div class="setup-instructions">
+        <h3>How to find your Spreadsheet ID:</h3>
+        <ol>
+            <li>Open your Google Sheets spreadsheet</li>
+            <li>Look at the URL: https://docs.google.com/spreadsheets/d/<strong>[SPREADSHEET_ID]</strong>/edit</li>
+            <li>Copy the 44-character ID from the URL</li>
+        </ol>
+    </div>
+
+    <form id="setup-form" class="setup-form">
+        <div class="form-group">
+            <label for="spreadsheet-id">Spreadsheet ID</label>
+            <input
+                type="text"
+                id="spreadsheet-id"
+                class="form-control"
+                placeholder="1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T"
+                pattern="[A-Za-z0-9_-]{44}"
+                required
+            />
+            <small class="form-hint">Must be exactly 44 characters</small>
+        </div>
+
+        <div class="form-group">
+            <label for="sheet-tab-name">Sheet Tab Name</label>
+            <input
+                type="text"
+                id="sheet-tab-name"
+                class="form-control"
+                placeholder="Expenses 2025"
+                maxlength="100"
+                required
+            />
+            <small class="form-hint">The name of the specific tab/sheet within your spreadsheet</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Preferences</button>
+    </form>
+
+    <div class="alert alert-success" id="success-message" style="display: none;"></div>
+    <div class="alert alert-error" id="error-message" style="display: none;"></div>
+</div>
+
+<script>
+    document.getElementById('setup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const spreadsheetId = document.getElementById('spreadsheet-id').value;
+        const sheetTabName = document.getElementById('sheet-tab-name').value;
+
+        try {
+            const response = await fetch('/api/v1/auth/setup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    spreadsheet_id: spreadsheetId,
+                    sheet_tab_name: sheetTabName
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById('success-message').textContent = data.message;
+                document.getElementById('success-message').style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                document.getElementById('error-message').textContent = data.message || 'Setup failed';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('error-message').textContent = 'Network error. Please try again.';
+            document.getElementById('error-message').style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}

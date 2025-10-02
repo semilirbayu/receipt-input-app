@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Review Receipt - Receipt Processing App{% endblock %}
+
+{% block content %}
+<div class="review-container">
+    <h2>Review & Correct Receipt Data</h2>
+
+    <div class="review-layout">
+        <div class="receipt-preview">
+            <h3>Receipt Image</h3>
+            <div class="image-thumbnail" id="image-preview">
+                <p>Receipt uploaded successfully</p>
+            </div>
+        </div>
+
+        <div class="review-form">
+            <form id="correction-form">
+                <input type="hidden" id="receipt-id" value="{{ receipt_id }}">
+
+                <div class="form-group">
+                    <label for="transaction-date">
+                        Transaction Date
+                        <span class="confidence-indicator" id="date-confidence"></span>
+                    </label>
+                    <input
+                        type="date"
+                        id="transaction-date"
+                        class="form-control"
+                        required
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="items">
+                        Items
+                        <span class="confidence-indicator" id="items-confidence"></span>
+                    </label>
+                    <textarea
+                        id="items"
+                        class="form-control"
+                        rows="4"
+                        maxlength="500"
+                        placeholder="Coffee; Sandwich; Water"
+                        required
+                    ></textarea>
+                    <small class="form-hint">Separate items with semicolons</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="total-amount">
+                        Total Amount
+                        <span class="confidence-indicator" id="amount-confidence"></span>
+                    </label>
+                    <input
+                        type="number"
+                        id="total-amount"
+                        class="form-control"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        required
+                    />
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="save-btn" disabled>
+                        Save to Google Sheets
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="discard-btn">
+                        Discard and Upload New
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert alert-success" id="success-message" style="display: none;"></div>
+    <div class="alert alert-error" id="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/review.js"></script>
+{% endblock %}

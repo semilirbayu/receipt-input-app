@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Receipt Save API
+  version: 1.0.0
+  description: API contract for saving confirmed receipt data to Google Sheets
+
+paths:
+  /api/v1/save:
+    post:
+      summary: Save confirmed receipt data to Google Sheets
+      operationId: saveReceipt
+      tags:
+        - Receipt Processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - receipt_id
+                - transaction_date
+                - items
+                - total_amount
+              properties:
+                receipt_id:
+                  type: string
+                  format: uuid
+                  example: "a3bb189e-8bf9-3888-9912-ace4e6543002"
+                transaction_date:
+                  type: string
+                  format: date
+                  example: "2025-09-28"
+                  description: Confirmed transaction date (user-corrected or OCR result)
+                items:
+                  type: string
+                  maxLength: 500
+                  example: "Coffee; Sandwich; Water"
+                  description: Semicolon-delimited list of items
+                total_amount:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  example: 24.50
+                  description: Total receipt amount
+      responses:
+        '200':
+          description: Receipt data successfully saved to Google Sheets
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - spreadsheet_url
+                  - row_number
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  spreadsheet_url:
+                    type: string
+                    format: uri
+                    example: "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
+                  row_number:
+                    type: integer
+                    example: 42
+                    description: Row number where data was appended
+        '400':
+          description: Invalid request (missing required fields or validation failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  value:
+                    error_code: "MISSING_REQUIRED_FIELDS"
+                    message: "All fields (transaction_date, items, total_amount) are required"
+                invalidDate:
+                  value:
+                    error_code: "INVALID_DATE"
+                    message: "Transaction date must be a valid date"
+                invalidAmount:
+                  value:
+                    error_code: "INVALID_AMOUNT"
+                    message: "Total amount must be a positive number"
+        '401':
+          description: Authentication required or token expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                tokenExpired:
+                  value:
+                    error_code: "AUTH_EXPIRED"
+                    message: "Google Sheets authentication expired. Please reconnect."
+                notAuthenticated:
+                  value:
+                    error_code: "NOT_AUTHENTICATED"
+                    message: "Google Sheets authentication required"
+        '403':
+          description: Insufficient permissions to access Google Sheets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                insufficientPermissions:
+                  value:
+                    error_code: "GS-403"
+                    message: "Error GS-403: Unable to save data"
+        '423':
+          description: Google Sheets resource locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resourceLocked:
+                  value:
+                    error_code: "GS-423"
+                    message: "Error GS-423: Unable to save data"
+        '429':
+          description: Google Sheets API quota exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                quotaExceeded:
+                  value:
+                    error_code: "GS-429"
+                    message: "Error GS-429: Unable to save data"
+        '500':
+          description: Server error during Google Sheets operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                googleSheetsError:
+                  value:
+                    error_code: "GS-500"
+                    message: "Error GS-500: Unable to save data"
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+          example: "MISSING_REQUIRED_FIELDS"
+        message:
+          type: string
+          example: "All fields are required"

@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: Google Sheets OAuth2 Authentication API
+  version: 1.0.0
+  description: API contract for OAuth2 authentication flow with Google Sheets
+
+paths:
+  /api/v1/auth/login:
+    get:
+      summary: Initiate OAuth2 authorization flow
+      operationId: initiateAuth
+      tags:
+        - Authentication
+      responses:
+        '302':
+          description: Redirect to Google OAuth2 consent screen
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+                example: "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=https://www.googleapis.com/auth/spreadsheets"
+        '500':
+          description: Server error generating authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/callback:
+    get:
+      summary: Handle OAuth2 callback from Google
+      operationId: handleCallback
+      tags:
+        - Authentication
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google OAuth2
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: CSRF protection token (optional)
+      responses:
+        '302':
+          description: Redirect to setup page for spreadsheet selection
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+                example: "/setup"
+        '400':
+          description: Invalid or missing authorization code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingCode:
+                  value:
+                    error_code: "MISSING_AUTH_CODE"
+                    message: "Authorization code not provided"
+        '401':
+          description: Authorization failed or user denied access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                authFailed:
+                  value:
+                    error_code: "AUTH_FAILED"
+                    message: "Failed to authenticate with Google"
+
+  /api/v1/auth/setup:
+    post:
+      summary: Save user's target spreadsheet and sheet tab preferences
+      operationId: savePreferences
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - spreadsheet_id
+                - sheet_tab_name
+              properties:
+                spreadsheet_id:
+                  type: string
+                  minLength: 44
+                  maxLength: 44
+                  example: "1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T"
+                  description: Google Sheets spreadsheet ID from URL
+                sheet_tab_name:
+                  type: string
+                  maxLength: 100
+                  example: "Expenses 2025"
+                  description: Specific sheet tab name within spreadsheet
+      responses:
+        '200':
+          description: Preferences saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Preferences saved. You can now upload receipts."
+        '400':
+          description: Invalid spreadsheet ID or sheet tab name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSpreadsheetId:
+                  value:
+                    error_code: "INVALID_SPREADSHEET_ID"
+                    message: "Spreadsheet ID must be 44 characters"
+                invalidSheetName:
+                  value:
+                    error_code: "INVALID_SHEET_NAME"
+                    message: "Sheet tab name cannot be empty"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAuthenticated:
+                  value:
+                    error_code: "NOT_AUTHENTICATED"
+                    message: "Please authenticate with Google Sheets first"
+
+  /api/v1/auth/status:
+    get:
+      summary: Check current authentication status
+      operationId: checkAuthStatus
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Authentication status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authenticated
+                properties:
+                  authenticated:
+                    type: boolean
+                    example: true
+                  spreadsheet_configured:
+                    type: boolean
+                    example: true
+                  token_expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2025-10-08T14:30:00Z"
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+          example: "AUTH_FAILED"
+        message:
+          type: string
+          example: "Failed to authenticate with Google"

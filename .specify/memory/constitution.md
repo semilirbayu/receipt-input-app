@@ -1,50 +1,105 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version: [template] → 1.0.0 (Initial constitution establishment)
+- Principles established: RESTful API Design, Responsive UI, OAuth2 Authentication, Unit Testing
+- Added sections: Development Standards, Governance
+- Templates status:
+  ✅ .specify/templates/plan-template.md (aligned with constitution checks)
+  ✅ .specify/templates/spec-template.md (no changes needed)
+  ✅ .specify/templates/tasks-template.md (aligned with testing principles)
+- Follow-up TODOs: None
+-->
+
+# Receipt Input App Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. RESTful API Design
+All backend APIs MUST follow RESTful conventions with JSON-based communication:
+- HTTP verbs used semantically (GET, POST, PUT, DELETE, PATCH)
+- Resources identified by URIs with proper noun usage
+- Responses MUST use appropriate HTTP status codes (2xx success, 4xx client errors, 5xx
+  server errors)
+- All request and response payloads MUST be valid JSON
+- API versioning MUST be implemented via URL path (e.g., `/api/v1/`)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**Rationale**: RESTful design ensures predictable, stateless, and cacheable APIs that
+integrate seamlessly with modern frontend frameworks and external services.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Responsive UI
+User interfaces MUST be responsive and functional across mobile and desktop devices:
+- Mobile-first design approach MUST be applied
+- Breakpoints MUST support common device sizes (mobile: <768px, tablet: 768-1024px,
+  desktop: >1024px)
+- Touch targets MUST meet minimum size requirements (44x44px) for mobile usability
+- Layout MUST adapt without horizontal scrolling on any supported viewport
+- Critical functionality MUST remain accessible on all device types
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: Users need to input receipts from various contexts (on-the-go mobile entry,
+desk-based data processing), requiring seamless experiences across all devices.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. OAuth2 Authentication for Google Sheets
+Authentication and authorization for Google Sheets integration MUST use OAuth2:
+- OAuth2 authorization code flow MUST be implemented
+- Secure token storage with appropriate encryption MUST be enforced
+- Token refresh mechanisms MUST be automatic and transparent to users
+- Scope requests MUST follow principle of least privilege
+- Users MUST explicitly grant permissions before any data access
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: OAuth2 is the industry standard for secure third-party service integration,
+ensuring user data privacy and compliance with Google's API policies.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Unit Testing (NON-NEGOTIABLE)
+Unit tests MUST be written for all backend modules:
+- Each service, controller, and utility module MUST have corresponding unit tests
+- Tests MUST achieve minimum 80% code coverage for backend logic
+- Tests MUST be isolated (no external dependencies like databases or APIs in unit tests)
+- Mock/stub patterns MUST be used for external dependencies
+- Tests MUST be automated and run in CI/CD pipeline before deployment
+- Test-first approach (TDD) STRONGLY RECOMMENDED for new features
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rationale**: Unit testing ensures code reliability, facilitates refactoring, catches
+regressions early, and serves as living documentation of module behavior.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Standards
+
+### Code Quality
+- Linting and formatting tools MUST be configured and enforced
+- Code reviews MUST be conducted before merging to main branch
+- Cyclomatic complexity SHOULD be kept below 10 per function
+- Functions SHOULD follow single responsibility principle
+
+### Error Handling
+- All API errors MUST return consistent error response format with error codes and messages
+- Errors MUST be logged with sufficient context for debugging
+- User-facing error messages MUST be clear and actionable
+- Sensitive information MUST NOT be exposed in error responses
+
+### Security
+- Input validation MUST be performed on all API endpoints
+- SQL injection and XSS prevention MUST be implemented
+- Secrets and credentials MUST NOT be committed to version control
+- HTTPS MUST be enforced for all production endpoints
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### Amendment Procedure
+This constitution can be amended through the following process:
+1. Proposed changes MUST be documented with rationale
+2. Changes MUST be reviewed and approved by project maintainers
+3. Version number MUST be updated according to semantic versioning
+4. Dependent templates and documentation MUST be updated to reflect changes
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### Versioning Policy
+Constitution follows semantic versioning (MAJOR.MINOR.PATCH):
+- **MAJOR**: Backward-incompatible governance changes, principle removals, or redefinitions
+- **MINOR**: New principles added or material expansions to existing guidance
+- **PATCH**: Clarifications, wording improvements, typo fixes, non-semantic refinements
+
+### Compliance Review
+- All pull requests MUST verify compliance with constitutional principles
+- Plan phase MUST include Constitution Check gate (as defined in plan-template.md)
+- Non-compliance MUST be justified in Complexity Tracking section with rationale
+- Unjustifiable violations MUST be refactored before approval
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-01 | **Last Amended**: 2025-10-01

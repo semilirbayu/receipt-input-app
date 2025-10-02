@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Receipt - Receipt Processing App{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h2>Upload Receipt</h2>
+
+    <div class="upload-area" id="upload-area">
+        <div class="upload-icon">📄</div>
+        <p class="upload-text desktop-only">Drag and drop receipt image here</p>
+        <p class="upload-text mobile-only">Tap to select receipt image</p>
+        <p class="upload-hint">JPG or PNG, max 5MB</p>
+
+        <input
+            type="file"
+            id="file-input"
+            accept="image/jpeg,image/png"
+            style="display: none;"
+        />
+
+        <button class="btn btn-primary" id="select-file-btn">Choose File</button>
+    </div>
+
+    <div class="progress-indicator" id="progress-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing receipt...</p>
+    </div>
+
+    <div class="alert alert-error" id="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/upload.js"></script>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Receipt Processing App{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-logo">Receipt App</h1>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Upload Receipt</a>
+                <a href="/api/v1/auth/status" class="nav-link" id="auth-status">Connect to Google Sheets</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Receipt Processing App | <a href="/help">Help</a></p>
+    </footer>
+
+    <script>
+        // Check auth status and update nav
+        fetch('/api/v1/auth/status')
+            .then(res => res.json())
+            .then(data => {
+                const authLink = document.getElementById('auth-status');
+                if (data.authenticated && data.spreadsheet_configured) {
+                    authLink.textContent = 'Connected ✓';
+                    authLink.classList.add('connected');
+                } else if (data.authenticated) {
+                    authLink.href = '/setup';
+                    authLink.textContent = 'Complete Setup';
+                } else {
+                    authLink.href = '/api/v1/auth/login';
+                    authLink.textContent = 'Connect to Google Sheets';
+                }
+            })
+            .catch(err => console.error('Auth status check failed:', err));
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
