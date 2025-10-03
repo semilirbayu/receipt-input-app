@@ -1,0 +1,176 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Validate Column Reference API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/column-config/validate": {
+      "post": {
+        "summary": "Validate a column reference",
+        "description": "Validates a single column reference against format and range rules. Useful for real-time validation in UI.",
+        "operationId": "validateColumnReference",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              },
+              "examples": {
+                "valid_single": {
+                  "summary": "Valid single letter column",
+                  "value": {
+                    "column": "A"
+                  }
+                },
+                "valid_double": {
+                  "summary": "Valid double letter column",
+                  "value": {
+                    "column": "ZZ"
+                  }
+                },
+                "invalid_format": {
+                  "summary": "Invalid format",
+                  "value": {
+                    "column": "A1"
+                  }
+                },
+                "out_of_range": {
+                  "summary": "Out of range",
+                  "value": {
+                    "column": "AAA"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "Valid column reference",
+                    "value": {
+                      "valid": true,
+                      "column": "A",
+                      "index": 0
+                    }
+                  },
+                  "invalid_format": {
+                    "summary": "Invalid format",
+                    "value": {
+                      "valid": false,
+                      "column": "A1",
+                      "error_code": "INVALID_COLUMN_FORMAT",
+                      "message": "Column must be uppercase letters only (A-ZZ)"
+                    }
+                  },
+                  "out_of_range": {
+                    "summary": "Out of range",
+                    "value": {
+                      "valid": false,
+                      "column": "AAA",
+                      "error_code": "COLUMN_OUT_OF_RANGE",
+                      "message": "Column exceeds maximum range. Must be between A and ZZ."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error_code": "MISSING_COLUMN_FIELD",
+                  "message": "Field 'column' is required"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ValidateRequest": {
+        "type": "object",
+        "required": [
+          "column"
+        ],
+        "properties": {
+          "column": {
+            "type": "string",
+            "description": "Column reference to validate",
+            "example": "A"
+          }
+        }
+      },
+      "ValidationResponse": {
+        "type": "object",
+        "required": [
+          "valid",
+          "column"
+        ],
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the column reference is valid"
+          },
+          "column": {
+            "type": "string",
+            "description": "The column reference that was validated"
+          },
+          "index": {
+            "type": "integer",
+            "description": "Zero-based column index (only present if valid)",
+            "minimum": 0,
+            "maximum": 701,
+            "example": 0
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Error code (only present if invalid)",
+            "enum": [
+              "INVALID_COLUMN_FORMAT",
+              "COLUMN_OUT_OF_RANGE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message (only present if invalid)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "properties": {
+          "error_code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      }
+    }
+  }
+}
