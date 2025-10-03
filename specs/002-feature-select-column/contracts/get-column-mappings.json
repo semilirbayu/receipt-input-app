@@ -1,0 +1,134 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Get Column Mappings API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/column-config": {
+      "get": {
+        "summary": "Retrieve user's column mapping configuration",
+        "description": "Returns the current column mappings for authenticated user session. Returns 404 if not configured.",
+        "operationId": "getColumnMappings",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User session identifier from OAuth2"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Column mappings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ColumnMappingsResponse"
+                },
+                "examples": {
+                  "configured": {
+                    "summary": "User has configured mappings",
+                    "value": {
+                      "date_column": "A",
+                      "description_column": "B",
+                      "price_column": "F"
+                    }
+                  },
+                  "with_duplicates": {
+                    "summary": "Duplicate column assignments",
+                    "value": {
+                      "date_column": "A",
+                      "description_column": "B",
+                      "price_column": "A"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Column mappings not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error_code": "COLUMN_MAPPINGS_NOT_CONFIGURED",
+                  "message": "Column mappings have not been configured. Please set up your column preferences."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error_code": "AUTH_REQUIRED",
+                  "message": "Authentication required"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ColumnMappingsResponse": {
+        "type": "object",
+        "required": [
+          "date_column",
+          "description_column",
+          "price_column"
+        ],
+        "properties": {
+          "date_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for transaction date (A-ZZ)",
+            "example": "A"
+          },
+          "description_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for items description (A-ZZ)",
+            "example": "B"
+          },
+          "price_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for total amount (A-ZZ)",
+            "example": "C"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "properties": {
+          "error_code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      }
+    }
+  }
+}

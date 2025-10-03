@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import API routers
-from backend.src.api.v1 import upload, save, auth
+from backend.src.api.v1 import upload, save, auth, column_config
 from backend.src.api.middleware.file_validation import FileValidationMiddleware
 from backend.src.services.cleanup_service import CleanupService
 from backend.src.storage.temp_storage import TempStorageService
@@ -82,6 +82,7 @@ app.mount("/static", StaticFiles(directory="frontend/src/static"), name="static"
 app.include_router(upload.router, tags=["Receipt Processing"])
 app.include_router(save.router, tags=["Receipt Processing"])
 app.include_router(auth.router, tags=["Authentication"])
+app.include_router(column_config.router, tags=["Column Configuration"])
 
 
 @app.get("/")
@@ -94,6 +95,42 @@ async def root(request: Request):
 async def setup_page(request: Request):
     """Render Google Sheets setup page."""
     return templates.TemplateResponse("setup.html", {"request": request})
+
+
+@app.get("/column-config")
+async def column_config_page(request: Request):
+    """
+    Render column configuration page.
+
+    Attempts to load current column mappings if they exist.
+    """
+    current_mappings = None
+
+    try:
+        # Try to fetch current column mappings via API
+        # This uses the same session/cookie mechanism as other endpoints
+        import httpx
+        async with httpx.AsyncClient() as client:
+            # Forward cookies from the request to maintain session
+            cookies = request.cookies
+            response = await client.get(
+                'http://localhost:8000/api/v1/column-config',
+                cookies=cookies
+            )
+
+            if response.status_code == 200:
+                current_mappings = response.json()
+    except Exception as e:
+        # If mappings don't exist or there's an error, just show empty form
+        logger.info(f"No existing column mappings found: {e}")
+
+    return templates.TemplateResponse(
+        "column_config.html",
+        {
+            "request": request,
+            "current_mappings": current_mappings
+        }
+    )
 
 
 @app.get("/review/{receipt_id}")

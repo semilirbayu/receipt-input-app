@@ -176,6 +176,10 @@ body {
     color: white;
 }
 
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 1.5rem;
@@ -325,6 +329,141 @@ label {
     padding: 1.5rem;
     border-radius: 0.5rem;
     border: 1px solid var(--border);
+}
+
+.next-steps {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--success-color);
+    margin-top: 2rem;
+}
+
+.next-steps h3 {
+    color: var(--success-color);
+    margin-bottom: 1rem;
+}
+
+.current-config {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    margin-top: 2rem;
+}
+
+.config-info {
+    margin: 1rem 0;
+}
+
+.config-info p {
+    margin-bottom: 0.5rem;
+}
+
+/* Column Configuration page */
+.column-config-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.config-instructions {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+}
+
+.config-instructions h3 {
+    margin-bottom: 0.75rem;
+}
+
+.config-instructions ul {
+    margin-left: 1.5rem;
+    margin-top: 1rem;
+}
+
+.config-instructions li {
+    margin-bottom: 0.5rem;
+}
+
+.column-config-form {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+}
+
+/* Validation states for column config inputs */
+.validation-indicator {
+    font-size: 1.25rem;
+    margin-left: 0.5rem;
+    display: inline-block;
+    min-width: 24px;
+    text-align: center;
+}
+
+.field-valid {
+    border-color: var(--success-color);
+    background-color: #f0fdf4;
+}
+
+.field-invalid {
+    border-color: var(--error-color);
+    background-color: #fef2f2;
+}
+
+.field-error {
+    display: none;
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #fef2f2;
+    border-radius: 0.25rem;
+    border-left: 3px solid var(--error-color);
+}
+
+.field-error[role="alert"] {
+    /* Ensure accessibility for error messages */
+}
+
+/* Input field sizing for touch devices */
+.column-config-form .form-control {
+    min-height: 48px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.05em;
+}
+
+/* Mobile-specific adjustments for column config */
+@media (max-width: 767px) {
+    .column-config-form .form-control {
+        min-height: 48px;
+        font-size: 1.125rem; /* Slightly larger on mobile */
+    }
+
+    .validation-indicator {
+        font-size: 1.5rem;
+    }
+
+    .config-instructions {
+        padding: 1rem;
+    }
+
+    .column-config-form {
+        padding: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
 }
 
 /* Tablet breakpoint */

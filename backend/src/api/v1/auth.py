@@ -217,5 +217,42 @@ async def check_auth_status(request: Request):
     return {
         "authenticated": authenticated,
         "spreadsheet_configured": spreadsheet_configured,
-        "token_expires_at": token_expiry_str
+        "token_expires_at": token_expiry_str,
+        "spreadsheet_id": user_pref.spreadsheet_id if user_pref else None,
+        "sheet_tab_name": user_pref.sheet_tab_name if user_pref else None
+    }
+
+
+@router.post("/api/v1/auth/disconnect")
+async def disconnect_spreadsheet(request: Request):
+    """
+    Disconnect from Google Sheets and clear all configuration.
+
+    This endpoint clears:
+    - OAuth session tokens
+    - User preferences (spreadsheet ID, sheet tab, column mappings)
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        JSON response with success message
+    """
+    session = request.session if hasattr(request, 'session') else {}
+    user_session_id = session.get('user_id', 'default_user')
+
+    # Delete user preferences file
+    user_pref = UserPreference.load_by_session_id(user_session_id)
+    if user_pref:
+        user_pref.delete()
+        logger.info(f"Deleted preferences for user {user_session_id}")
+
+    # Clear session
+    if hasattr(request, 'session'):
+        request.session.clear()
+        logger.info(f"Cleared session for user {user_session_id}")
+
+    return {
+        "success": True,
+        "message": "Successfully disconnected from Google Sheets"
     }

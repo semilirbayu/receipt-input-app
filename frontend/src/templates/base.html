@@ -35,6 +35,7 @@
                 if (data.authenticated && data.spreadsheet_configured) {
                     authLink.textContent = 'Connected ✓';
                     authLink.classList.add('connected');
+                    authLink.href = '/setup';
                 } else if (data.authenticated) {
                     authLink.href = '/setup';
                     authLink.textContent = 'Complete Setup';

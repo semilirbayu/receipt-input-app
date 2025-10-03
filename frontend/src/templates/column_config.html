@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Configure Column Mappings - Receipt Processing App{% endblock %}
+
+{% block content %}
+<div class="column-config-container">
+    <h2>Configure Column Mappings</h2>
+
+    <div class="config-instructions">
+        <h3>Map your receipt data to spreadsheet columns:</h3>
+        <p>Specify which columns should contain each piece of receipt data. Use standard spreadsheet notation (A-ZZ).</p>
+        <ul>
+            <li><strong>Date Column:</strong> Where transaction dates will be saved</li>
+            <li><strong>Description Column:</strong> Where item descriptions will be saved</li>
+            <li><strong>Price Column:</strong> Where total amounts will be saved</li>
+        </ul>
+        <small class="form-hint">Examples: A, B, C, Z, AA, AB, ZZ</small>
+    </div>
+
+    <form id="column-config-form" class="column-config-form">
+        <div class="form-group">
+            <label for="date-column">
+                Date Column
+                <span class="validation-indicator" id="date-validation"></span>
+            </label>
+            <input
+                type="text"
+                id="date-column"
+                class="form-control"
+                placeholder="A"
+                pattern="[A-Z]{1,2}"
+                maxlength="2"
+                value="{{ current_mappings.date_column if current_mappings else '' }}"
+                required
+                aria-describedby="date-hint date-error"
+            />
+            <small class="form-hint" id="date-hint">Enter a column letter (A-ZZ)</small>
+            <div class="field-error" id="date-error" role="alert"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="description-column">
+                Description Column
+                <span class="validation-indicator" id="description-validation"></span>
+            </label>
+            <input
+                type="text"
+                id="description-column"
+                class="form-control"
+                placeholder="B"
+                pattern="[A-Z]{1,2}"
+                maxlength="2"
+                value="{{ current_mappings.description_column if current_mappings else '' }}"
+                required
+                aria-describedby="description-hint description-error"
+            />
+            <small class="form-hint" id="description-hint">Enter a column letter (A-ZZ)</small>
+            <div class="field-error" id="description-error" role="alert"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="price-column">
+                Price Column
+                <span class="validation-indicator" id="price-validation"></span>
+            </label>
+            <input
+                type="text"
+                id="price-column"
+                class="form-control"
+                placeholder="C"
+                pattern="[A-Z]{1,2}"
+                maxlength="2"
+                value="{{ current_mappings.price_column if current_mappings else '' }}"
+                required
+                aria-describedby="price-hint price-error"
+            />
+            <small class="form-hint" id="price-hint">Enter a column letter (A-ZZ)</small>
+            <div class="field-error" id="price-error" role="alert"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="save-config-btn">
+                Save Configuration
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancel-btn">
+                Cancel
+            </button>
+        </div>
+    </form>
+
+    <div class="alert alert-success" id="success-message" style="display: none;"></div>
+    <div class="alert alert-error" id="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/column_config.js"></script>
+{% endblock %}

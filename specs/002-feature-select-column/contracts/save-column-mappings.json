@@ -1,0 +1,228 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Save Column Mappings API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/column-config": {
+      "post": {
+        "summary": "Save or update column mapping configuration",
+        "description": "Creates or updates column mappings for authenticated user session. All three mappings (date, description, price) must be provided.",
+        "operationId": "saveColumnMappings",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User session identifier from OAuth2"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveColumnMappingsRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic column mapping",
+                  "value": {
+                    "date_column": "A",
+                    "description_column": "B",
+                    "price_column": "C"
+                  }
+                },
+                "non_contiguous": {
+                  "summary": "Non-contiguous columns",
+                  "value": {
+                    "date_column": "A",
+                    "description_column": "C",
+                    "price_column": "F"
+                  }
+                },
+                "with_duplicates": {
+                  "summary": "Duplicate column (will concatenate)",
+                  "value": {
+                    "date_column": "A",
+                    "description_column": "B",
+                    "price_column": "A"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Column mappings saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveSuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Column mappings saved successfully",
+                  "mappings": {
+                    "date_column": "A",
+                    "description_column": "B",
+                    "price_column": "C"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalid_format": {
+                    "summary": "Invalid column format",
+                    "value": {
+                      "error_code": "INVALID_COLUMN_FORMAT",
+                      "message": "Column 'AAA' is invalid. Must be A-ZZ format.",
+                      "field": "price_column"
+                    }
+                  },
+                  "out_of_range": {
+                    "summary": "Column out of range",
+                    "value": {
+                      "error_code": "COLUMN_OUT_OF_RANGE",
+                      "message": "Column 'ZZZ' is out of range. Maximum is 'ZZ'.",
+                      "field": "date_column"
+                    }
+                  },
+                  "missing_field": {
+                    "summary": "Required field missing",
+                    "value": {
+                      "error_code": "MISSING_REQUIRED_FIELD",
+                      "message": "Field 'description_column' is required",
+                      "field": "description_column"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error_code": "AUTH_REQUIRED",
+                  "message": "Authentication required"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SaveColumnMappingsRequest": {
+        "type": "object",
+        "required": [
+          "date_column",
+          "description_column",
+          "price_column"
+        ],
+        "properties": {
+          "date_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for transaction date (A-ZZ)",
+            "example": "A"
+          },
+          "description_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for items description (A-ZZ)",
+            "example": "B"
+          },
+          "price_column": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,2}$",
+            "description": "Column for total amount (A-ZZ)",
+            "example": "C"
+          }
+        }
+      },
+      "SaveSuccessResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "mappings"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Column mappings saved successfully"
+          },
+          "mappings": {
+            "type": "object",
+            "properties": {
+              "date_column": {
+                "type": "string",
+                "pattern": "^[A-Z]{1,2}$"
+              },
+              "description_column": {
+                "type": "string",
+                "pattern": "^[A-Z]{1,2}$"
+              },
+              "price_column": {
+                "type": "string",
+                "pattern": "^[A-Z]{1,2}$"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "properties": {
+          "error_code": {
+            "type": "string",
+            "description": "Machine-readable error code",
+            "enum": [
+              "INVALID_COLUMN_FORMAT",
+              "COLUMN_OUT_OF_RANGE",
+              "MISSING_REQUIRED_FIELD",
+              "AUTH_REQUIRED"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "field": {
+            "type": "string",
+            "description": "Field name that failed validation (if applicable)"
+          }
+        }
+      }
+    }
+  }
+}

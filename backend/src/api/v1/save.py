@@ -110,6 +110,16 @@ async def save_receipt(request: Request, data: SaveRequest):
             }
         )
 
+    # Check if column mappings are configured
+    if not user_pref.has_column_mappings():
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "COLUMN_MAPPINGS_REQUIRED",
+                "message": "Please configure column mappings before processing receipts"
+            }
+        )
+
     # Construct GoogleSheetsRow
     sheets_row = GoogleSheetsRow.from_extracted_data(
         transaction_date=parsed_date,

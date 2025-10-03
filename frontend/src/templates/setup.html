@@ -47,6 +47,25 @@
 
     <div class="alert alert-success" id="success-message" style="display: none;"></div>
     <div class="alert alert-error" id="error-message" style="display: none;"></div>
+
+    <div class="next-steps" id="next-steps" style="display: none;">
+        <h3>Next Steps</h3>
+        <p>Your spreadsheet is configured! Now configure your column mappings to start processing receipts.</p>
+        <a href="/column-config" class="btn btn-primary">Configure Column Mappings</a>
+    </div>
+
+    <div class="current-config" id="current-config" style="display: none;">
+        <h3>Current Configuration</h3>
+        <div class="config-info">
+            <p><strong>Spreadsheet ID:</strong> <span id="display-spreadsheet-id"></span></p>
+            <p><strong>Sheet Tab:</strong> <span id="display-sheet-tab"></span></p>
+            <p><strong>Column Mappings:</strong> <span id="display-column-mappings">Not configured</span></p>
+        </div>
+        <div style="margin-top: 1rem;">
+            <a href="/column-config" class="btn btn-secondary">Update Column Mappings</a>
+            <button id="disconnect-btn" class="btn btn-danger" style="margin-left: 1rem;">Disconnect Spreadsheet</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -71,12 +90,80 @@
             if (response.ok) {
                 document.getElementById('success-message').textContent = data.message;
                 document.getElementById('success-message').style.display = 'block';
+                document.getElementById('next-steps').style.display = 'block';
 
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 2000);
+                // Hide form after successful save
+                document.getElementById('setup-form').style.display = 'none';
             } else {
                 document.getElementById('error-message').textContent = data.message || 'Setup failed';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('error-message').textContent = 'Network error. Please try again.';
+            document.getElementById('error-message').style.display = 'block';
+        }
+    });
+
+    // Check current configuration status on page load
+    async function checkCurrentConfig() {
+        try {
+            // Check auth status to get spreadsheet info
+            const authResponse = await fetch('/api/v1/auth/status');
+            const authData = await authResponse.json();
+
+            if (authData.authenticated && authData.spreadsheet_configured) {
+                // Show current config section
+                document.getElementById('current-config').style.display = 'block';
+
+                // Display spreadsheet info (if available)
+                if (authData.spreadsheet_id) {
+                    document.getElementById('display-spreadsheet-id').textContent =
+                        authData.spreadsheet_id.substring(0, 20) + '...';
+                }
+                if (authData.sheet_tab_name) {
+                    document.getElementById('display-sheet-tab').textContent = authData.sheet_tab_name;
+                }
+
+                // Check column mappings
+                try {
+                    const columnResponse = await fetch('/api/v1/column-config');
+                    if (columnResponse.ok) {
+                        const columnData = await columnResponse.json();
+                        const mappings = `Date: ${columnData.date_column}, Description: ${columnData.description_column}, Price: ${columnData.price_column}`;
+                        document.getElementById('display-column-mappings').textContent = mappings;
+                    }
+                } catch (err) {
+                    // Column config not set yet - this is okay
+                    console.log('Column mappings not configured yet');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking configuration:', error);
+        }
+    }
+
+    // Run on page load
+    checkCurrentConfig();
+
+    // Handle disconnect button
+    document.getElementById('disconnect-btn')?.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to disconnect? This will remove all spreadsheet configuration and column mappings.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/v1/auth/disconnect', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Reload page to reset state
+                window.location.reload();
+            } else {
+                document.getElementById('error-message').textContent = data.message || 'Disconnect failed';
                 document.getElementById('error-message').style.display = 'block';
             }
         } catch (error) {
