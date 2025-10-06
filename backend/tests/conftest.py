@@ -10,6 +10,9 @@ from pathlib import Path
 import json
 import tempfile
 import shutil
+import os
+from unittest.mock import MagicMock, patch
+from datetime import date
 
 
 @pytest.fixture
@@ -147,3 +150,123 @@ def setup_test_data(tmp_path, monkeypatch):
 
     # Cleanup (optional, tmp_path is auto-cleaned)
     # No explicit cleanup needed as tmp_path is automatically cleaned up
+
+
+# ============================================
+# Gemini Vision API Fixtures (for T004-T011)
+# ============================================
+
+@pytest.fixture
+def mock_gemini_high_quality_response():
+    """
+    Mock Gemini API response for high-quality Indonesian receipt.
+    Used in T004, T007, T011 tests.
+    """
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "transaction_date": "2025-10-06",
+        "total_amount": 50000,
+        "items": "Nasi Goreng (2 porsi); Es Teh Manis",
+        "currency": "IDR",
+        "detected_language": "id",
+        "confidence": {
+            "date": 0.95,
+            "amount": 0.98,
+            "items": 0.92
+        }
+    })
+    return mock_response
+
+
+@pytest.fixture
+def mock_gemini_low_quality_response():
+    """
+    Mock Gemini API response for low-quality/blurry receipt.
+    Used in T008 test - low confidence scores.
+    """
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "transaction_date": None,
+        "total_amount": 25000,
+        "items": "Unclear items",
+        "currency": "IDR",
+        "detected_language": "id",
+        "confidence": {
+            "date": 0.45,
+            "amount": 0.75,
+            "items": 0.52
+        }
+    })
+    return mock_response
+
+
+@pytest.fixture
+def mock_gemini_future_date_response():
+    """
+    Mock Gemini API response with future date (for validation testing).
+    Used in T010 test - future date rejection.
+    """
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "transaction_date": "2026-01-01",
+        "total_amount": 75000,
+        "items": "Test items",
+        "currency": "IDR",
+        "detected_language": "id",
+        "confidence": {
+            "date": 0.90,
+            "amount": 0.95,
+            "items": 0.88
+        }
+    })
+    return mock_response
+
+
+@pytest.fixture
+def mock_gemini_english_receipt_response():
+    """
+    Mock Gemini API response for English receipt.
+    Used in T011 test - bilingual paraphrasing.
+    """
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "transaction_date": "2025-10-05",
+        "total_amount": 15.50,
+        "items": "Chicken Wings (3 pieces); Iced Tea (Large)",
+        "currency": "USD",
+        "detected_language": "en",
+        "confidence": {
+            "date": 0.93,
+            "amount": 0.97,
+            "items": 0.90
+        }
+    })
+    return mock_response
+
+
+@pytest.fixture
+def sample_receipt_images():
+    """
+    Provide paths to sample receipt images for integration tests.
+    Returns dict mapping receipt type to file path.
+    """
+    fixtures_dir = Path(__file__).parent.parent.parent / "tests" / "fixtures" / "receipts"
+    return {
+        "high_quality": fixtures_dir / "testing-receipt.jpeg",
+        "medium_quality": fixtures_dir / "testing-receipt2.jpeg",
+        "low_quality": fixtures_dir / "testing-receipt3.jpeg",
+        "english": fixtures_dir / "testing-receipt4.jpeg",
+        "edge_case": fixtures_dir / "testing-receipt5.jpeg"
+    }
+
+
+@pytest.fixture
+def gemini_api_key_env(monkeypatch):
+    """
+    Set optional GEMINI_API_KEY environment variable for tests.
+    Tests should work without actual API key (mocked responses).
+    """
+    # Set to dummy value - real tests will mock the API
+    monkeypatch.setenv("GEMINI_API_KEY", "test-api-key-dummy")
+    yield
+    # Cleanup handled by monkeypatch

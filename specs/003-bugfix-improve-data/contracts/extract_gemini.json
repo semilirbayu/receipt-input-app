@@ -1,0 +1,404 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Receipt Extraction API - Gemini Vision Integration",
+    "version": "1.1.0",
+    "description": "Enhanced receipt extraction endpoint supporting Gemini Vision API with backward compatibility"
+  },
+  "paths": {
+    "/api/receipts/upload": {
+      "post": {
+        "summary": "Upload and extract receipt data",
+        "description": "Upload receipt image, extract structured data using Gemini Vision API (with Tesseract fallback)",
+        "operationId": "uploadReceipt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Receipt image file (JPEG, PNG, up to 5MB)"
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "description": "Optional user identifier for tracking"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Receipt processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionSuccessResponse"
+                },
+                "examples": {
+                  "gemini_success": {
+                    "summary": "Successful Gemini extraction",
+                    "value": {
+                      "receipt_id": "550e8400-e29b-41d4-a716-446655440000",
+                      "extracted_data": {
+                        "transaction_date": "2025-10-06",
+                        "transaction_date_confidence": 0.95,
+                        "items": "Nasi Goreng (2 portions); Es Teh Manis",
+                        "items_confidence": 0.92,
+                        "total_amount": 50000,
+                        "total_amount_confidence": 0.98,
+                        "extraction_method": "gemini",
+                        "detected_language": "id",
+                        "currency": "IDR",
+                        "paraphrased": true,
+                        "confidence_indicators": {
+                          "date": "✓",
+                          "items": "✓",
+                          "amount": "✓"
+                        }
+                      },
+                      "validation": {
+                        "date_valid": true,
+                        "price_valid": true,
+                        "items_valid": true,
+                        "warnings": []
+                      },
+                      "processing_time_ms": 3200
+                    }
+                  },
+                  "low_quality_image": {
+                    "summary": "Low confidence extraction",
+                    "value": {
+                      "receipt_id": "661f9511-f39c-52e5-b827-557766551111",
+                      "extracted_data": {
+                        "transaction_date": null,
+                        "transaction_date_confidence": 0.45,
+                        "items": "Unclear items",
+                        "items_confidence": 0.52,
+                        "total_amount": 25000,
+                        "total_amount_confidence": 0.75,
+                        "extraction_method": "gemini",
+                        "detected_language": "id",
+                        "currency": "IDR",
+                        "paraphrased": false,
+                        "confidence_indicators": {
+                          "date": "✗",
+                          "items": "⚠",
+                          "amount": "⚠"
+                        }
+                      },
+                      "validation": {
+                        "date_valid": false,
+                        "price_valid": true,
+                        "items_valid": true,
+                        "warnings": ["low_image_quality", "date_confidence_below_threshold"]
+                      },
+                      "processing_time_ms": 4100
+                    }
+                  },
+                  "fallback_extraction": {
+                    "summary": "Tesseract fallback (Gemini failed)",
+                    "value": {
+                      "receipt_id": "772g0622-g40d-63f6-c938-668877662222",
+                      "extracted_data": {
+                        "transaction_date": "2025-10-05",
+                        "transaction_date_confidence": 0.70,
+                        "items": "Item1 x1; Item2 x2",
+                        "items_confidence": 0.65,
+                        "total_amount": 75000,
+                        "total_amount_confidence": 0.75,
+                        "extraction_method": "tesseract_fallback",
+                        "detected_language": null,
+                        "currency": null,
+                        "paraphrased": false,
+                        "confidence_indicators": {
+                          "date": "⚠",
+                          "items": "⚠",
+                          "amount": "⚠"
+                        }
+                      },
+                      "validation": {
+                        "date_valid": true,
+                        "price_valid": true,
+                        "items_valid": true,
+                        "warnings": ["gemini_api_unavailable", "using_fallback_extraction"]
+                      },
+                      "processing_time_ms": 2800
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (bad image format, missing file)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "INVALID_FILE_FORMAT",
+                  "message": "File must be JPEG or PNG format",
+                  "details": {
+                    "provided_format": "application/pdf",
+                    "allowed_formats": ["image/jpeg", "image/png"]
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large (>5MB)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "FILE_TOO_LARGE",
+                  "message": "File size exceeds 5MB limit",
+                  "details": {
+                    "file_size_mb": 7.2,
+                    "max_size_mb": 5.0
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "RATE_LIMIT_EXCEEDED",
+                  "message": "Too many requests, using fallback extraction",
+                  "details": {
+                    "limit": "15 requests per minute",
+                    "retry_after": 30,
+                    "fallback_used": true
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error (both Gemini and Tesseract failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "EXTRACTION_FAILED",
+                  "message": "Unable to extract data from receipt",
+                  "details": {
+                    "gemini_error": "API timeout",
+                    "tesseract_error": "Image processing failed"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ExtractionSuccessResponse": {
+        "type": "object",
+        "required": ["receipt_id", "extracted_data", "validation", "processing_time_ms"],
+        "properties": {
+          "receipt_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for uploaded receipt"
+          },
+          "extracted_data": {
+            "$ref": "#/components/schemas/ExtractedData"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationSummary"
+          },
+          "processing_time_ms": {
+            "type": "integer",
+            "description": "Total processing time in milliseconds",
+            "example": 3200,
+            "minimum": 0
+          }
+        }
+      },
+      "ExtractedData": {
+        "type": "object",
+        "required": [
+          "transaction_date_confidence",
+          "items_confidence",
+          "total_amount_confidence",
+          "extraction_method",
+          "paraphrased",
+          "confidence_indicators"
+        ],
+        "properties": {
+          "transaction_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Extracted transaction date (ISO 8601)",
+            "example": "2025-10-06"
+          },
+          "transaction_date_confidence": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence score for date extraction",
+            "example": 0.95
+          },
+          "items": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500,
+            "description": "Semicolon-separated list of items (paraphrased if using Gemini)",
+            "example": "Nasi Goreng (2 portions); Es Teh Manis"
+          },
+          "items_confidence": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence score for items extraction",
+            "example": 0.92
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true,
+            "minimum": 0.01,
+            "maximum": 999999.99,
+            "description": "Total amount (numeric only, no currency symbol)",
+            "example": 50000
+          },
+          "total_amount_confidence": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence score for amount extraction",
+            "example": 0.98
+          },
+          "extraction_method": {
+            "type": "string",
+            "enum": ["gemini", "tesseract_fallback"],
+            "description": "Method used for extraction",
+            "example": "gemini"
+          },
+          "detected_language": {
+            "type": "string",
+            "enum": ["en", "id"],
+            "nullable": true,
+            "description": "Detected receipt language (English or Indonesian)",
+            "example": "id"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "Detected currency code",
+            "example": "IDR"
+          },
+          "paraphrased": {
+            "type": "boolean",
+            "description": "Whether items were AI-paraphrased for clarity",
+            "example": true
+          },
+          "confidence_indicators": {
+            "type": "object",
+            "required": ["date", "items", "amount"],
+            "description": "UI confidence indicators (✓/⚠/✗)",
+            "properties": {
+              "date": {
+                "type": "string",
+                "enum": ["✓", "⚠", "✗"],
+                "example": "✓"
+              },
+              "items": {
+                "type": "string",
+                "enum": ["✓", "⚠", "✗"],
+                "example": "✓"
+              },
+              "amount": {
+                "type": "string",
+                "enum": ["✓", "⚠", "✗"],
+                "example": "✓"
+              }
+            }
+          }
+        }
+      },
+      "ValidationSummary": {
+        "type": "object",
+        "required": ["date_valid", "price_valid", "items_valid", "warnings"],
+        "properties": {
+          "date_valid": {
+            "type": "boolean",
+            "description": "Date passes business rules (not future, parseable)",
+            "example": true
+          },
+          "price_valid": {
+            "type": "boolean",
+            "description": "Price passes business rules (positive, reasonable range)",
+            "example": true
+          },
+          "items_valid": {
+            "type": "boolean",
+            "description": "Items pass business rules (not gibberish, readable)",
+            "example": true
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Non-fatal validation warnings",
+            "example": ["low_image_quality"]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code",
+            "enum": [
+              "INVALID_FILE_FORMAT",
+              "FILE_TOO_LARGE",
+              "RATE_LIMIT_EXCEEDED",
+              "GEMINI_API_ERROR",
+              "EXTRACTION_FAILED"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error context",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}
