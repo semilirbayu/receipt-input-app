@@ -8,6 +8,7 @@ Upload receipt images, extract data via OCR, manually correct extracted fields, 
 - **OCR Processing**: Automatic text extraction using Tesseract OCR
 - **Data Extraction**: Intelligent parsing of transaction date, items, and total amount
 - **Manual Correction**: Review and correct OCR results before saving
+- **Custom Column Mapping**: Configure which Google Sheets columns receive your data (A-ZZ range)
 - **Google Sheets Integration**: Direct save to your Google Sheets spreadsheet via OAuth2
 - **Responsive UI**: Mobile-first design with optimized UX for phones, tablets, and desktops
 - **Automatic Cleanup**: Receipt images deleted after 24 hours for privacy
@@ -33,16 +34,27 @@ Upload receipt images, extract data via OCR, manually correct extracted fields, 
 ```bash
 git clone <repository-url>
 cd receipt-input-app
-git checkout 001-feature-receipt-processing
 ```
 
-### 2. Install Dependencies
+### 2. Create Virtual Environment
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate  # macOS/Linux
+# OR
+venv\Scripts\activate     # Windows
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Google OAuth2
+### 4. Configure Google OAuth2
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing one
@@ -57,7 +69,7 @@ pip install -r requirements.txt
    - Add Authorized Redirect URI: `http://localhost:8000/api/v1/auth/callback`
    - Copy Client ID and Client Secret
 
-### 4. Configure Environment Variables
+### 5. Configure Environment Variables
 
 ```bash
 cp .env.example .env
@@ -74,10 +86,19 @@ UPLOAD_DIR=shared/uploads
 MAX_FILE_SIZE_MB=5
 ```
 
-### 5. Run Application
+### 6. Run Application
 
+**Option 1: With activated virtual environment**
 ```bash
+# Make sure venv is activated first (see step 2)
 uvicorn frontend.src.main:app --reload --port 8000
+```
+
+**Option 2: Direct venv execution (no activation needed)**
+```bash
+./venv/bin/uvicorn frontend.src.main:app --reload --port 8000  # macOS/Linux
+# OR
+venv\Scripts\uvicorn frontend.src.main:app --reload --port 8000  # Windows
 ```
 
 Navigate to: `http://localhost:8000`
@@ -93,14 +114,27 @@ Navigate to: `http://localhost:8000`
 5. Enter your **Sheet Tab Name** (e.g., "Expenses 2025")
 6. Click **"Save Preferences"**
 
-### 2. Upload Receipt
+### 2. Configure Column Mappings
+
+1. Navigate to **"Configure Columns"** page
+2. Specify which columns should receive your data:
+   - **Date Column**: Column for transaction date (e.g., "A")
+   - **Description Column**: Column for items/description (e.g., "B")
+   - **Price Column**: Column for total amount (e.g., "C")
+3. Columns must be in A-ZZ range (supports up to 702 columns)
+4. You can map multiple fields to the same column (values will be concatenated with " | ")
+5. Click **"Save Column Mappings"**
+
+**Note**: Column mapping configuration is required before you can process receipts.
+
+### 3. Upload Receipt
 
 1. Go to the homepage (`/`)
 2. **Desktop**: Drag and drop receipt image into the upload area
 3. **Mobile**: Tap to select receipt image from your device
 4. Wait for OCR processing (completes in <5 seconds)
 
-### 3. Review & Correct Data
+### 4. Review & Correct Data
 
 1. Review the automatically extracted fields:
    - Transaction Date
@@ -112,14 +146,14 @@ Navigate to: `http://localhost:8000`
    - ⚠ (yellow): Medium confidence
    - ✗ (red): Low confidence
 
-### 4. Save to Google Sheets
+### 5. Save to Google Sheets
 
 1. Click **"Save to Google Sheets"**
-2. Data is appended as a new row with:
-   - Transaction Date (YYYY-MM-DD)
-   - Items (semicolon-delimited)
-   - Total Amount (decimal)
-   - Uploaded At (ISO 8601 timestamp)
+2. Data is written to your configured columns:
+   - Transaction Date (YYYY-MM-DD) → Your specified date column
+   - Items (semicolon-delimited) → Your specified description column
+   - Total Amount (decimal) → Your specified price column
+   - Uploaded At (ISO 8601 timestamp) → Included in row
 3. Receipt image is automatically deleted after successful save
 
 ## Testing
@@ -153,10 +187,12 @@ pytest -m unit
 
 | Issue | Solution |
 |-------|----------|
-| `ModuleNotFoundError: pytesseract` | Install dependencies: `pip install -r requirements.txt` |
+| `command not found: uvicorn` | Activate virtual environment (`source venv/bin/activate`) or use `./venv/bin/uvicorn` directly |
+| `ModuleNotFoundError: pytesseract` | Install dependencies: `pip install -r requirements.txt` (make sure venv is activated) |
 | `TesseractNotFoundError` | Install Tesseract OCR: `brew install tesseract` (macOS) or `apt-get install tesseract-ocr` (Linux) |
 | OAuth2 redirect fails | Verify `REDIRECT_URI` matches Google Cloud Console OAuth2 settings exactly |
 | "Error GS-403" on save | Check Google Sheets permissions - ensure you have edit access to the spreadsheet |
+| "Column mappings required" error | Configure column mappings first via "Configure Columns" page before processing receipts |
 | OCR returns empty results | Check image quality - ensure receipt text is visible and high-contrast |
 | Session expired error | Token expired after 7 days - click "Reconnect" to re-authenticate |
 
@@ -165,7 +201,12 @@ pytest -m unit
 ### Local Development
 
 ```bash
+# Option 1: With activated venv
+source venv/bin/activate
 uvicorn frontend.src.main:app --reload --port 8000
+
+# Option 2: Direct execution
+./venv/bin/uvicorn frontend.src.main:app --reload --port 8000
 ```
 
 ### Production (Render)
@@ -202,14 +243,24 @@ receipt-input-app/
 
 ## API Endpoints
 
+### Receipt Processing
 - `POST /api/v1/upload` - Upload receipt for OCR processing
 - `POST /api/v1/save` - Save confirmed data to Google Sheets
+
+### Authentication
 - `GET /api/v1/auth/login` - Initiate OAuth2 flow
 - `GET /api/v1/auth/callback` - Handle OAuth2 callback
 - `POST /api/v1/auth/setup` - Save spreadsheet preferences
 - `GET /api/v1/auth/status` - Check authentication status
 
-See [contracts/](specs/001-feature-receipt-processing/contracts/) for full API specifications.
+### Column Configuration
+- `GET /api/v1/column-config` - Retrieve current column mappings
+- `POST /api/v1/column-config` - Save column mappings configuration
+- `POST /api/v1/column-config/validate` - Validate single column reference
+
+See API specifications in:
+- [Feature 001 Contracts](specs/001-feature-receipt-processing/contracts/) - Receipt processing endpoints
+- [Feature 002 Contracts](specs/002-feature-select-column/contracts/) - Column configuration endpoints
 
 ## License
 
