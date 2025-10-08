@@ -1,19 +1,23 @@
 """
 ExtractedData model representing OCR-parsed data from a receipt.
+
+Enhanced to support Gemini Vision API integration with backward compatibility.
 """
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 import uuid
 
 
 @dataclass
 class ExtractedData:
     """
-    Represents OCR-parsed data from a receipt.
+    Represents OCR-parsed data from a receipt with Gemini Vision support.
 
-    Attributes:
+    Backward compatible - new fields have defaults that preserve existing behavior.
+
+    Original Attributes:
         id: Unique identifier (UUID)
         receipt_id: Foreign key to Receipt
         transaction_date: Extracted date from receipt
@@ -22,10 +26,20 @@ class ExtractedData:
         items_confidence: OCR confidence score (0.0-1.0)
         total_amount: Total receipt amount
         total_amount_confidence: OCR confidence score (0.0-1.0)
-        raw_ocr_text: Full unprocessed OCR output (for debugging)
+        raw_ocr_text: Full unprocessed OCR output (Gemini JSON response if using Gemini)
         extraction_timestamp: When OCR completed
+
+    New Gemini Attributes:
+        extraction_method: "gemini" or "tesseract_fallback"
+        detected_language: "id" (Indonesian) or "en" (English) or None
+        currency: "IDR", "USD", etc. or None
+        validation_errors: List of business rule violations (e.g., ["future_date_rejected"])
+        paraphrased: True if items were AI-paraphrased for clarity
     """
 
+    # ==========================================
+    # EXISTING FIELDS (preserved for compatibility)
+    # ==========================================
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     receipt_id: str = ""
     transaction_date: Optional[date] = None
@@ -37,12 +51,64 @@ class ExtractedData:
     raw_ocr_text: str = ""
     extraction_timestamp: datetime = field(default_factory=datetime.utcnow)
 
+    # ==========================================
+    # NEW FIELDS (Gemini integration)
+    # ==========================================
+    extraction_method: str = "tesseract"  # Default to tesseract for backward compatibility
+    detected_language: Optional[str] = None  # "en" | "id"
+    currency: Optional[str] = None  # "IDR" | "USD" | etc.
+    validation_errors: List[str] = field(default_factory=list)  # ["future_date_rejected", ...]
+    paraphrased: bool = False  # True if items were AI-paraphrased
+
     # Constants
     MAX_ITEMS_LENGTH = 500
+    CONFIDENCE_THRESHOLDS = {
+        "high": 0.85,
+        "medium": 0.60,
+        "low": 0.0
+    }
+
+    def get_confidence_level(self, field: str) -> str:
+        """
+        Get UI-friendly confidence level for a field.
+
+        Args:
+            field: "date" | "items" | "amount"
+
+        Returns:
+            "high" | "medium" | "low"
+        """
+        conf_map = {
+            "date": self.transaction_date_confidence,
+            "items": self.items_confidence,
+            "amount": self.total_amount_confidence
+        }
+
+        confidence = conf_map.get(field, 0.0)
+
+        if confidence >= self.CONFIDENCE_THRESHOLDS["high"]:
+            return "high"
+        elif confidence >= self.CONFIDENCE_THRESHOLDS["medium"]:
+            return "medium"
+        else:
+            return "low"
+
+    def get_ui_indicator(self, field: str) -> str:
+        """
+        Get UI confidence indicator symbol (FR-019).
+
+        Args:
+            field: "date" | "items" | "amount"
+
+        Returns:
+            "✓" (high) | "⚠" (medium) | "✗" (low)
+        """
+        level = self.get_confidence_level(field)
+        return {"high": "✓", "medium": "⚠", "low": "✗"}[level]
 
     def validate(self) -> tuple[bool, Optional[str]]:
         """
-        Validate extracted data.
+        Validate extracted data (enhanced from original).
 
         Returns:
             Tuple of (is_valid, error_message)
@@ -67,6 +133,14 @@ class ExtractedData:
         # At least one field must be non-null
         if all(v is None for v in [self.transaction_date, self.items, self.total_amount]):
             return False, "At least one field must be extracted"
+
+        # NEW: Validate extraction method
+        if self.extraction_method not in ["gemini", "tesseract", "tesseract_fallback"]:
+            return False, f"Invalid extraction_method: {self.extraction_method}"
+
+        # NEW: Validate language code if present
+        if self.detected_language and self.detected_language not in ["en", "id"]:
+            return False, f"Invalid detected_language: {self.detected_language}"
 
         return True, None
 
@@ -110,12 +184,26 @@ class ExtractedData:
         )
 
     def to_dict(self) -> dict:
-        """Convert to dictionary for API response."""
+        """Convert to dictionary for API response (enhanced with Gemini fields)."""
         return {
+            # Original fields
             "transaction_date": self.transaction_date.isoformat() if self.transaction_date else None,
             "transaction_date_confidence": self.transaction_date_confidence,
             "items": self.items,
             "items_confidence": self.items_confidence,
             "total_amount": float(self.total_amount) if self.total_amount else None,
-            "total_amount_confidence": self.total_amount_confidence
+            "total_amount_confidence": self.total_amount_confidence,
+
+            # New Gemini fields
+            "extraction_method": self.extraction_method,
+            "detected_language": self.detected_language,
+            "currency": self.currency,
+            "paraphrased": self.paraphrased,
+
+            # UI helpers
+            "confidence_indicators": {
+                "date": self.get_ui_indicator("date"),
+                "items": self.get_ui_indicator("items"),
+                "amount": self.get_ui_indicator("amount")
+            }
         }

@@ -5,27 +5,32 @@ Upload receipt images, extract data via OCR, manually correct extracted fields, 
 ## Features
 
 - **Receipt Upload**: Drag-and-drop or tap to upload receipt images (JPG/PNG, max 5MB)
-- **OCR Processing**: Automatic text extraction using Tesseract OCR
-- **Data Extraction**: Intelligent parsing of transaction date, items, and total amount
-- **Manual Correction**: Review and correct OCR results before saving
+- **AI-Powered OCR**: Gemini Vision API for intelligent text extraction with automatic fallback to Tesseract OCR
+- **Smart Data Extraction**: AI paraphrasing for clarity, language detection (Indonesian/English), and structured output
+- **Bilingual Support**: Automatic language detection with same-language paraphrasing (no unwanted translations)
+- **Validation & Quality**: Business rule validation, confidence indicators (✓/⚠/✗), and hybrid confidence scoring
+- **Manual Correction**: Review and correct extraction results before saving
 - **Custom Column Mapping**: Configure which Google Sheets columns receive your data (A-ZZ range)
 - **Google Sheets Integration**: Direct save to your Google Sheets spreadsheet via OAuth2
+- **Quality Metrics**: Automatic tracking of extraction success rates and confidence distributions
 - **Responsive UI**: Mobile-first design with optimized UX for phones, tablets, and desktops
 - **Automatic Cleanup**: Receipt images deleted after 24 hours for privacy
 
 ## Tech Stack
 
 - **Backend**: Python 3.11+, FastAPI, Jinja2
-- **OCR**: pytesseract + Pillow
+- **AI/ML**: Google Gemini Vision API (gemini-1.5-flash) for intelligent receipt extraction
+- **OCR Fallback**: pytesseract + Pillow (automatic fallback when Gemini unavailable)
 - **Integration**: gspread + google-auth (OAuth2)
-- **Storage**: File system (24-hour TTL)
-- **Testing**: pytest, pytest-asyncio, pytest-cov (80% coverage)
+- **Storage**: File system (24-hour TTL for images, JSON for metrics)
+- **Testing**: pytest, pytest-asyncio, pytest-cov (80% coverage target)
 
 ## Prerequisites
 
 - Python 3.11 or higher
 - Tesseract OCR (`brew install tesseract` on macOS or `apt-get install tesseract-ocr` on Linux)
 - Google Cloud project with Sheets API enabled and OAuth2 credentials
+- **Gemini API key** from [Google AI Studio](https://makersuite.google.com/app/apikey) (free tier: 15 req/min, 1500 req/day)
 
 ## Setup Instructions
 
@@ -84,7 +89,18 @@ SECRET_KEY=your-random-secret-key  # Generate: python -c "import secrets; print(
 REDIRECT_URI=http://localhost:8000/api/v1/auth/callback
 UPLOAD_DIR=shared/uploads
 MAX_FILE_SIZE_MB=5
+
+# Gemini Vision API Configuration (NEW)
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
+
+**Getting a Gemini API Key:**
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Click "Create API Key" (requires Google account)
+3. Copy the generated key
+4. Paste it into `.env` as `GEMINI_API_KEY=...`
+
+**Note**: The app will automatically fall back to Tesseract OCR if Gemini API is unavailable or rate-limited.
 
 ### 6. Run Application
 
@@ -183,6 +199,48 @@ pytest -m integration
 pytest -m unit
 ```
 
+## API Response Format
+
+The enhanced receipt extraction API now returns detailed extraction metadata:
+
+```json
+{
+  "receipt_id": "550e8400-e29b-41d4-a716-446655440000",
+  "extracted_data": {
+    "transaction_date": "2025-10-06",
+    "transaction_date_confidence": 0.95,
+    "items": "Nasi Goreng (2 porsi); Es Teh Manis",
+    "items_confidence": 0.92,
+    "total_amount": 50000,
+    "total_amount_confidence": 0.98,
+    "extraction_method": "gemini",
+    "detected_language": "id",
+    "currency": "IDR",
+    "paraphrased": true,
+    "confidence_indicators": {
+      "date": "✓",
+      "items": "✓",
+      "amount": "✓"
+    }
+  },
+  "validation": {
+    "date_valid": true,
+    "price_valid": true,
+    "items_valid": true,
+    "warnings": []
+  },
+  "processing_time_ms": 3200
+}
+```
+
+**Key Enhancements:**
+- `extraction_method`: Shows whether Gemini or Tesseract fallback was used
+- `detected_language`: Auto-detected language ("id" or "en")
+- `currency`: Detected currency code (e.g., "IDR", "USD")
+- `paraphrased`: Indicates if items were AI-paraphrased for clarity
+- `confidence_indicators`: Visual indicators (✓/⚠/✗) for each field
+- `validation`: Business rule validation results with warnings
+
 ## Troubleshooting
 
 | Issue | Solution |
@@ -190,11 +248,15 @@ pytest -m unit
 | `command not found: uvicorn` | Activate virtual environment (`source venv/bin/activate`) or use `./venv/bin/uvicorn` directly |
 | `ModuleNotFoundError: pytesseract` | Install dependencies: `pip install -r requirements.txt` (make sure venv is activated) |
 | `TesseractNotFoundError` | Install Tesseract OCR: `brew install tesseract` (macOS) or `apt-get install tesseract-ocr` (Linux) |
+| **`GEMINI_API_KEY not set`** | **Add Gemini API key to `.env` file (see setup step 5)** |
+| **`429 Rate Limit Exceeded`** | **Gemini free tier limit reached (15/min). App automatically falls back to Tesseract** |
+| **All extractions show `tesseract_fallback`** | **Check Gemini API key validity, verify internet connection, or check Google AI Studio console for API status** |
 | OAuth2 redirect fails | Verify `REDIRECT_URI` matches Google Cloud Console OAuth2 settings exactly |
 | "Error GS-403" on save | Check Google Sheets permissions - ensure you have edit access to the spreadsheet |
 | "Column mappings required" error | Configure column mappings first via "Configure Columns" page before processing receipts |
 | OCR returns empty results | Check image quality - ensure receipt text is visible and high-contrast |
 | Session expired error | Token expired after 7 days - click "Reconnect" to re-authenticate |
+| **Low confidence scores** | **Image quality may be poor (blurry, low contrast). Try re-photographing the receipt with better lighting** |
 
 ## Deployment
 
