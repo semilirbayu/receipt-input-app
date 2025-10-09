@@ -53,4 +53,35 @@ logs/
 
 # OS
 .DS_Store
+._*
 Thumbs.db
+
+# User-specific configuration and runtime data
+shared/user_preferences.json
+shared/extraction_metrics.json
+
+# Google OAuth credentials
+credentials.json
+token.json
+*_credentials.json
+service-account*.json
+*.pkl
+
+# Linter/formatter caches
+.ruff_cache/
+.mypy_cache/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Python type checking
+.dmypy.json
+dmypy.json
+
+# IPython/Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Backup files
+*.bak
+*.backup
