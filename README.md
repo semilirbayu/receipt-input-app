@@ -102,7 +102,40 @@ GEMINI_API_KEY=your-gemini-api-key-here
 
 **Note**: The app will automatically fall back to Tesseract OCR if Gemini API is unavailable or rate-limited.
 
-### 6. Run Application
+### 6. Initialize Configuration Files
+
+Create the required runtime configuration files:
+
+```bash
+# Create user preferences file
+cat > shared/user_preferences.json << 'EOF'
+{
+  "default_user": {
+    "id": "your-user-id-here",
+    "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+    "sheet_tab_name": "YOUR_TAB_NAME",
+    "column_mappings": {
+      "date": "B",
+      "description": "C",
+      "price": "F"
+    }
+  }
+}
+EOF
+
+# Create extraction metrics file
+cat > shared/extraction_metrics.json << 'EOF'
+{
+  "extractions": []
+}
+EOF
+```
+
+**Note**: These files are gitignored to prevent committing personal data. You'll need to configure them after setup:
+- `user_preferences.json` - Stores your Google Sheets connection settings and column mappings
+- `extraction_metrics.json` - Tracks extraction quality metrics (auto-populated by the app)
+
+### 7. Run Application
 
 **Option 1: With activated virtual environment**
 ```bash
