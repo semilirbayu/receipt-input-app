@@ -1,0 +1,13 @@
+{
+  "default_user": {
+    "id": "your-user-id-here",
+    "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+    "sheet_tab_name": "YOUR_TAB_NAME",
+    "column_mappings": {
+      "date": "B",
+      "description": "C",
+      "price": "F"
+    }
+  }
+}
+
