@@ -38,6 +38,24 @@ async def lifespan(app: FastAPI):
     """Lifespan events for startup and shutdown."""
     # Startup
     logger.info("Application startup: initializing cleanup scheduler")
+
+    # Ensure required directories exist (production fix for Render)
+    logger.info("Creating required directories if they don't exist")
+    Path("shared/uploads").mkdir(parents=True, exist_ok=True)
+    Path("shared").mkdir(exist_ok=True)
+
+    # Initialize user preferences file if it doesn't exist
+    prefs_file = Path("shared/user_preferences.json")
+    if not prefs_file.exists():
+        logger.info("Creating user_preferences.json file")
+        prefs_file.write_text('{}')
+
+    # Initialize extraction metrics file if it doesn't exist
+    metrics_file = Path("shared/extraction_metrics.json")
+    if not metrics_file.exists():
+        logger.info("Creating extraction_metrics.json file")
+        metrics_file.write_text('{"extractions": []}')
+
     cleanup_service.schedule_cleanup()
     cleanup_service.start()
 
@@ -61,9 +79,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-for-development-only")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Add CORS middleware
+# Allow origins from environment variable for production security
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,8 +133,10 @@ async def column_config_page(request: Request):
         async with httpx.AsyncClient() as client:
             # Forward cookies from the request to maintain session
             cookies = request.cookies
+            # Use request's base URL instead of hardcoded localhost (production fix)
+            base_url = f"{request.url.scheme}://{request.url.netloc}"
             response = await client.get(
-                'http://localhost:8000/api/v1/column-config',
+                f'{base_url}/api/v1/column-config',
                 cookies=cookies
             )
 

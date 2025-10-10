@@ -2,7 +2,7 @@
 OAuth2 authentication endpoints for Google Sheets integration.
 """
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
@@ -83,9 +83,9 @@ async def handle_callback(request: Request, code: str = None):
         Redirect to setup page
     """
     if not code:
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": "MISSING_AUTH_CODE",
                 "message": "Authorization code not provided"
             }

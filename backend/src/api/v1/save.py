@@ -2,6 +2,7 @@
 Save endpoint for confirmed receipt data to Google Sheets.
 """
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from datetime import date, datetime
 from decimal import Decimal
@@ -43,9 +44,9 @@ async def save_receipt(request: Request, data: SaveRequest):
     """
     # Validate all fields present
     if not all([data.receipt_id, data.transaction_date, data.items, data.total_amount is not None]):
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": "MISSING_REQUIRED_FIELDS",
                 "message": "All fields (transaction_date, items, total_amount) are required"
             }
@@ -55,9 +56,9 @@ async def save_receipt(request: Request, data: SaveRequest):
     try:
         parsed_date = date_parser.parse(data.transaction_date).date()
     except (ValueError, date_parser.ParserError):
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": "INVALID_DATE",
                 "message": "Transaction date must be a valid date"
             }
@@ -69,9 +70,9 @@ async def save_receipt(request: Request, data: SaveRequest):
         if amount < 0:
             raise ValueError("Negative amount")
     except (ValueError, ArithmeticError):
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": "INVALID_AMOUNT",
                 "message": "Total amount must be a positive number"
             }
@@ -85,9 +86,9 @@ async def save_receipt(request: Request, data: SaveRequest):
     user_session_id = session.get('user_id', 'default_user')
 
     if not oauth_token:
-        raise HTTPException(
+        return JSONResponse(
             status_code=401,
-            detail={
+            content={
                 "error_code": "NOT_AUTHENTICATED",
                 "message": "Google Sheets authentication required"
             }
@@ -102,9 +103,9 @@ async def save_receipt(request: Request, data: SaveRequest):
     # Load user preferences
     user_pref = UserPreference.load_by_session_id(user_session_id)
     if not user_pref:
-        raise HTTPException(
+        return JSONResponse(
             status_code=401,
-            detail={
+            content={
                 "error_code": "NOT_AUTHENTICATED",
                 "message": "Google Sheets configuration required"
             }
@@ -112,9 +113,9 @@ async def save_receipt(request: Request, data: SaveRequest):
 
     # Check if column mappings are configured
     if not user_pref.has_column_mappings():
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": "COLUMN_MAPPINGS_REQUIRED",
                 "message": "Please configure column mappings before processing receipts"
             }
@@ -150,7 +151,7 @@ async def save_receipt(request: Request, data: SaveRequest):
         else:
             status_code = 500
 
-        raise HTTPException(status_code=status_code, detail=response)
+        return JSONResponse(status_code=status_code, content=response)
 
     # Delete receipt file after successful save
     # Construct file path from receipt_id (simplified - in production use proper tracking)

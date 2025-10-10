@@ -1,0 +1,48 @@
+# Render Blueprint for Receipt Processing Web App
+# This file allows one-click deployment to Render.com
+
+services:
+  - type: web
+    name: receipt-input-app
+    env: python
+    region: singapore  # Options: oregon, frankfurt, singapore (choose closest to you)
+    plan: free  # Options: free, starter ($7/mo), standard, pro
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn frontend.src.main:app --host 0.0.0.0 --port $PORT
+
+    # Health check configuration
+    healthCheckPath: /health
+
+    # Environment variables (non-sensitive defaults only)
+    # IMPORTANT: Set sensitive values (API keys, secrets) via Render dashboard!
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+      - key: UPLOAD_DIR
+        value: shared/uploads
+
+      - key: MAX_FILE_SIZE_MB
+        value: "5"
+
+      # CORS allowed origins (update with your production domain)
+      - key: ALLOWED_ORIGINS
+        value: https://receipt-input-app.onrender.com,http://localhost:8000
+
+      # --- SECRETS (SET VIA RENDER DASHBOARD) ---
+      # The following must be set manually in Render dashboard:
+      #
+      # GOOGLE_CLIENT_ID: Your Google OAuth2 Client ID
+      # GOOGLE_CLIENT_SECRET: Your Google OAuth2 Client Secret
+      # REDIRECT_URI: https://your-app-name.onrender.com/api/v1/auth/callback
+      # SECRET_KEY: Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+      # GEMINI_API_KEY: Your Google Gemini API key from https://makersuite.google.com/app/apikey
+
+# Optional: Add a persistent disk for file storage (Starter plan required)
+# Uncomment to enable:
+#
+# disks:
+#   - name: receipt-storage
+#     mountPath: /opt/render/project/src/shared
+#     sizeGB: 1  # 1GB free with Starter plan

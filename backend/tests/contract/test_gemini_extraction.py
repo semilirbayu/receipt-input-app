@@ -30,7 +30,11 @@ class TestGeminiExtractionResponseFormat:
         # This import will fail - that's expected!
         from backend.src.services.gemini_extractor import GeminiExtractorService
 
-        with patch('google.generativeai.GenerativeModel') as mock_model:
+        with patch('google.generativeai.GenerativeModel') as mock_model, \
+             patch('PIL.Image.open') as mock_image:
+            # Mock image loading
+            mock_image.return_value = MagicMock()
+
             # Mock the generate_content method
             mock_instance = MagicMock()
             mock_instance.generate_content.return_value = mock_gemini_high_quality_response
@@ -97,7 +101,11 @@ class TestGeminiExtractionResponseFormat:
         """
         from backend.src.services.gemini_extractor import GeminiExtractorService, GeminiExtractionError
 
-        with patch('google.generativeai.GenerativeModel') as mock_model:
+        with patch('google.generativeai.GenerativeModel') as mock_model, \
+             patch('PIL.Image.open') as mock_image:
+            # Mock image loading
+            mock_image.return_value = MagicMock()
+
             mock_instance = MagicMock()
             # Simulate timeout
             mock_instance.generate_content.side_effect = TimeoutError("API timeout")
@@ -119,7 +127,11 @@ class TestGeminiExtractionResponseFormat:
         """
         from backend.src.services.gemini_extractor import GeminiExtractorService, GeminiExtractionError
 
-        with patch('google.generativeai.GenerativeModel') as mock_model:
+        with patch('google.generativeai.GenerativeModel') as mock_model, \
+             patch('PIL.Image.open') as mock_image:
+            # Mock image loading
+            mock_image.return_value = MagicMock()
+
             mock_instance = MagicMock()
             # Simulate rate limit error
             from google.generativeai.types import GenerationConfig
@@ -144,7 +156,11 @@ class TestGeminiExtractionResponseFormat:
         """
         from backend.src.services.gemini_extractor import GeminiExtractorService, GeminiExtractionError
 
-        with patch('google.generativeai.GenerativeModel') as mock_model:
+        with patch('google.generativeai.GenerativeModel') as mock_model, \
+             patch('PIL.Image.open') as mock_image:
+            # Mock image loading
+            mock_image.return_value = MagicMock()
+
             mock_instance = MagicMock()
             # Return invalid JSON
             mock_response = MagicMock()
@@ -178,7 +194,11 @@ class TestGeminiExtractionResponseFormat:
         """
         from backend.src.services.gemini_extractor import GeminiExtractorService
 
-        with patch('google.generativeai.GenerativeModel') as mock_model:
+        with patch('google.generativeai.GenerativeModel') as mock_model, \
+             patch('PIL.Image.open') as mock_image:
+            # Mock image loading
+            mock_image.return_value = MagicMock()
+
             mock_instance = MagicMock()
             mock_instance.generate_content.return_value = mock_gemini_high_quality_response
             mock_model.return_value = mock_instance

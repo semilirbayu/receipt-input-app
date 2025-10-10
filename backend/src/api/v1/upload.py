@@ -3,7 +3,8 @@ Upload endpoint for receipt image processing.
 
 Enhanced with Gemini Vision API integration and Tesseract fallback.
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
+from fastapi.responses import JSONResponse
 from backend.src.models.receipt import Receipt
 from backend.src.models.extracted_data import ExtractedData
 from backend.src.services.gemini_extractor import GeminiExtractorService, GeminiExtractionError
@@ -25,7 +26,7 @@ metrics_service = MetricsService()
 
 
 @router.post("/api/v1/upload")
-async def upload_receipt(file: UploadFile = File(...)):
+async def upload_receipt(file: UploadFile = File(None)):
     """
     Upload receipt image for OCR processing.
 
@@ -38,6 +39,16 @@ async def upload_receipt(file: UploadFile = File(...)):
     Raises:
         HTTPException: For validation or processing errors
     """
+    # Check if file was provided
+    if file is None or not file.filename:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error_code": "MISSING_FILE",
+                "message": "No file provided in request"
+            }
+        )
+
     # Read file content
     file_content = await file.read()
 
@@ -60,9 +71,9 @@ async def upload_receipt(file: UploadFile = File(...)):
             "MISSING_FILE": "No file provided in request"
         }
 
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail={
+            content={
                 "error_code": error_code,
                 "message": error_messages.get(error_code, "Invalid file")
             }
@@ -178,11 +189,11 @@ async def upload_receipt(file: UploadFile = File(...)):
         receipt.mark_failed()
         logger.error(f"Receipt processing failed: {str(e)}")
 
-        raise HTTPException(
+        return JSONResponse(
             status_code=500,
-            detail={
-                "error": "EXTRACTION_FAILED",
+            content={
+                "error_code": "EXTRACTION_FAILED",
                 "message": "Unable to extract data from receipt",
-                "details": {"error": str(e)}
+                "details": str(e)
             }
         )
