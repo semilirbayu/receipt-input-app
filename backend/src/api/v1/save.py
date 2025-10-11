@@ -22,7 +22,7 @@ storage_service = TempStorageService()
 class SaveRequest(BaseModel):
     """Request model for save endpoint."""
     receipt_id: str
-    transaction_date: str
+    transaction_date: str | None  # Optional - can be null if extraction failed
     items: str
     total_amount: float
 
@@ -42,27 +42,29 @@ async def save_receipt(request: Request, data: SaveRequest):
     Raises:
         HTTPException: For validation or save errors
     """
-    # Validate all fields present
-    if not all([data.receipt_id, data.transaction_date, data.items, data.total_amount is not None]):
+    # Validate required fields (date is optional)
+    if not all([data.receipt_id, data.items, data.total_amount is not None]):
         return JSONResponse(
             status_code=400,
             content={
                 "error_code": "MISSING_REQUIRED_FIELDS",
-                "message": "All fields (transaction_date, items, total_amount) are required"
+                "message": "Required fields (items, total_amount) are missing"
             }
         )
 
-    # Validate and parse transaction_date
-    try:
-        parsed_date = date_parser.parse(data.transaction_date).date()
-    except (ValueError, date_parser.ParserError):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "error_code": "INVALID_DATE",
-                "message": "Transaction date must be a valid date"
-            }
-        )
+    # Validate and parse transaction_date (optional)
+    parsed_date = None
+    if data.transaction_date:
+        try:
+            parsed_date = date_parser.parse(data.transaction_date).date()
+        except (ValueError, date_parser.ParserError):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error_code": "INVALID_DATE",
+                    "message": "Transaction date must be a valid date"
+                }
+            )
 
     # Validate total_amount
     try:

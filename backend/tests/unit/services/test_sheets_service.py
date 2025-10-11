@@ -29,11 +29,11 @@ class TestSheetsServiceBuildMappedRow:
 
         result = SheetsService.build_mapped_row(row_data, mappings)
 
-        # Expected: ['2024-01-15', 'Coffee; Bagel', '15.5']
+        # Expected: ['15/01/2024', 'Coffee; Bagel', 15.5]
         assert len(result) == 3
-        assert result[0] == "2024-01-15"
+        assert result[0] == "15/01/2024"
         assert result[1] == "Coffee; Bagel"
-        assert result[2] == "15.5"
+        assert result[2] == 15.5
 
     def test_build_mapped_row_non_contiguous_ACF(self):
         """Test build_mapped_row with non-contiguous columns (A, C, F) returns row with empty strings in gaps."""
@@ -51,15 +51,15 @@ class TestSheetsServiceBuildMappedRow:
 
         result = SheetsService.build_mapped_row(row_data, mappings)
 
-        # Expected: ['2024-01-15', '', 'Coffee', '', '', '15.5']
+        # Expected: ['15/01/2024', '', 'Coffee', '', '', 15.5]
         #            A            B   C        D   E   F
         assert len(result) == 6
-        assert result[0] == "2024-01-15"
+        assert result[0] == "15/01/2024"
         assert result[1] == ""
         assert result[2] == "Coffee"
         assert result[3] == ""
         assert result[4] == ""
-        assert result[5] == "15.5"
+        assert result[5] == 15.5
 
     def test_build_mapped_row_with_duplicates_ABA(self):
         """Test build_mapped_row with duplicates (A, B, A) concatenates values with ' | '."""
@@ -77,13 +77,13 @@ class TestSheetsServiceBuildMappedRow:
 
         result = SheetsService.build_mapped_row(row_data, mappings)
 
-        # Expected: ['2024-01-15 | 15.5', 'Coffee']
+        # Expected: ['15/01/2024 | 15.5', 'Coffee']
         #            A                     B
         assert len(result) == 2
         assert result[1] == "Coffee"
         # Check concatenation (order should be consistent)
         assert " | " in result[0]
-        assert "2024-01-15" in result[0]
+        assert "15/01/2024" in result[0]
         assert "15.5" in result[0]
 
     def test_build_mapped_row_max_column_index_calculation(self):
@@ -104,9 +104,9 @@ class TestSheetsServiceBuildMappedRow:
 
         # ZZ is index 701, so array should have 702 elements (0-701)
         assert len(result) == 702
-        assert result[0] == "2024-01-15"
+        assert result[0] == "15/01/2024"
         assert result[1] == "Coffee"
-        assert result[701] == "15.5"
+        assert result[701] == 15.5
 
         # All gaps should be empty strings
         for i in range(2, 701):
@@ -129,11 +129,11 @@ class TestSheetsServiceBuildMappedRow:
 
         result = SheetsService.build_mapped_row(row_data, mappings)
 
-        # Expected: ['2024-01-15 | Coffee; Bagel | 25.5']
+        # Expected: ['15/01/2024 | Coffee; Bagel | 25.5']
         assert len(result) == 1
         # All three values concatenated with ' | '
         assert result[0].count(" | ") == 2
-        assert "2024-01-15" in result[0]
+        assert "15/01/2024" in result[0]
         assert "Coffee; Bagel" in result[0]
         assert "25.5" in result[0]
 
@@ -155,9 +155,9 @@ class TestSheetsServiceBuildMappedRow:
 
         # AA=26, AB=27, AC=28, so array should have 29 elements (0-28)
         assert len(result) == 29
-        assert result[26] == "2024-01-15"
+        assert result[26] == "15/01/2024"
         assert result[27] == "Coffee"
-        assert result[28] == "15.5"
+        assert result[28] == 15.5
 
         # First 26 elements should be empty
         for i in range(26):
