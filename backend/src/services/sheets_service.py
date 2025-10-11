@@ -72,20 +72,20 @@ class SheetsService:
         # Map of column index to list of field values
         column_values = {}
 
-        # Add date value
+        # Add date value (DD/MM/YYYY format)
         if date_idx not in column_values:
             column_values[date_idx] = []
-        column_values[date_idx].append(row_data.transaction_date.strftime("%Y-%m-%d"))
+        column_values[date_idx].append(row_data.transaction_date.strftime("%d/%m/%Y"))
 
         # Add description value
         if desc_idx not in column_values:
             column_values[desc_idx] = []
         column_values[desc_idx].append(row_data.items)
 
-        # Add price value
+        # Add price value (as numeric float for proper Google Sheets parsing)
         if price_idx not in column_values:
             column_values[price_idx] = []
-        column_values[price_idx].append(str(float(row_data.total_amount)))
+        column_values[price_idx].append(float(row_data.total_amount))
 
         # Write values to sparse array (concatenate duplicates with ' | ')
         for col_idx, values in column_values.items():
@@ -93,7 +93,8 @@ class SheetsService:
                 row[col_idx] = values[0]
             else:
                 # Concatenate multiple values with ' | ' delimiter
-                row[col_idx] = ' | '.join(values)
+                # Convert all values to strings for joining
+                row[col_idx] = ' | '.join(str(v) for v in values)
 
         return row
 
@@ -157,7 +158,9 @@ class SheetsService:
 
             for attempt in range(max_retries):
                 try:
-                    worksheet.append_row(row)
+                    # Use USER_ENTERED so Google Sheets parses values (dates, numbers)
+                    # instead of storing them as raw text
+                    worksheet.append_row(row, value_input_option='USER_ENTERED')
                     break
                 except gspread.exceptions.APIError as e:
                     if e.response.status_code == 429 and attempt < max_retries - 1:

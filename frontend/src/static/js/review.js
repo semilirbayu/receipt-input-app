@@ -54,17 +54,34 @@ function updateConfidenceIndicator(field, confidence) {
 
 /**
  * Real-time form validation.
+ * Note: Date is optional - users can submit without it if extraction failed.
  */
 function validateForm() {
     const isValid =
-        transactionDateInput.value.trim() !== '' &&
         itemsInput.value.trim() !== '' &&
         totalAmountInput.value !== '' &&
         parseFloat(totalAmountInput.value) >= 0;
 
     saveBtn.disabled = !isValid;
 
+    // Show warning if date is missing
+    updateDateWarning();
+
     return isValid;
+}
+
+/**
+ * Show/hide warning indicator for missing date.
+ */
+function updateDateWarning() {
+    const dateWarning = document.getElementById('date-warning');
+    if (dateWarning) {
+        if (transactionDateInput.value.trim() === '') {
+            dateWarning.style.display = 'block';
+        } else {
+            dateWarning.style.display = 'none';
+        }
+    }
 }
 
 // Attach validation to input events
@@ -96,7 +113,7 @@ form.addEventListener('submit', async (e) => {
 
     const payload = {
         receipt_id: receiptIdInput.value,
-        transaction_date: transactionDateInput.value,
+        transaction_date: transactionDateInput.value.trim() || null,  // Send null if empty
         items: itemsInput.value,
         total_amount: parseFloat(totalAmountInput.value)
     };
